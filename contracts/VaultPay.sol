@@ -70,8 +70,26 @@ contract VaultPay is ReentrancyGuard {
         uint64 deadline,
         bytes32 memoHash
     ) external nonReentrant returns (uint256 paymentId) {
-        // TODO: implement
-        revert("TODO: createPayment");
+        if (recipient == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+        if (deadline <= block.timestamp) revert InvalidDeadline();
+
+        paymentId = nextPaymentId;
+        nextPaymentId++;
+
+        payments[paymentId] = Payment({
+            payer: msg.sender,
+            recipient: recipient,
+            amount: amount,
+            createdAt: uint64(block.timestamp),
+            deadline: deadline,
+            status: PaymentStatus.Created,
+            memoHash: memoHash
+        });
+
+        token.safeTransferFrom(msg.sender, address(this), amount);
+
+        emit PaymentCreated(paymentId, msg.sender, recipient, amount, deadline, memoHash);
     }
 
     /// @notice Claim an active payment.
