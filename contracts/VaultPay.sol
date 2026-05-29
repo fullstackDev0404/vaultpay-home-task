@@ -95,8 +95,17 @@ contract VaultPay is ReentrancyGuard {
     /// @notice Claim an active payment.
     /// @dev Only the intended recipient should be able to claim.
     function claimPayment(uint256 paymentId) external nonReentrant {
-        // TODO: implement
-        revert("TODO: claimPayment");
+        Payment storage payment = payments[paymentId];
+
+        if (payment.status != PaymentStatus.Created) revert PaymentNotActive();
+        if (payment.recipient != msg.sender) revert NotRecipient();
+        if (block.timestamp >= payment.deadline) revert PaymentExpired();
+
+        payment.status = PaymentStatus.Claimed;
+
+        token.safeTransfer(msg.sender, payment.amount);
+
+        emit PaymentClaimed(paymentId, msg.sender, payment.amount);
     }
 
     /// @notice Cancel an expired active payment and refund payer.
